@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  db:
+    restart: always
+    image: postgres:latest
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 1s
+      retries: 25
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${DB_NAME}
+      - DATABASE_HOST=${DB_HOST}
+    ports:
+      - "5436:5432"
+    volumes:
+      - ./data:/var/lib/postgresql/data
+
+  initdb:
+    build:
+      context: .
+      dockerfile: Dockerfile.initdb
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DATABASE_URL=postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:5432/${DB_NAME}?sslmode=disable
+      - FIRST_ADMIN_EMAIL=${FIRST_ADMIN_EMAIL}
+      - FIRST_ADMIN_PASSWORD=${FIRST_ADMIN_PASSWORD}
+    restart: "no"
+
+  pr-reviewer:
+    build: ./
+    command: ./game-store
+    ports:
+      - "8080:8080"
+    depends_on:
+      initdb:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
