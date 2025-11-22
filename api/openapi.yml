@@ -46,6 +46,7 @@ components:
                 - NOT_ASSIGNED
                 - NO_CANDIDATE
                 - NOT_FOUND
+                - NO_VALID_USERS
             message:
               type: string
       example:
@@ -196,6 +197,55 @@ paths:
                   - user_id: u2
                     username: Bob
                     is_active: true
+        '404':
+          description: Команда не найдена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /team/deactivateMembers:
+    post:
+      tags: [ Teams ]
+      summary: Деактивировать определенных участников команды
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ team_name, user_ids ]
+              properties:
+                team_name:
+                  type: string
+                user_ids:
+                  type: array
+                  items:
+                    type: string
+            example:
+              team_name: Team-1
+              user_ids: [u1, u2, u3]
+      responses:
+        '200':
+          description: Команда, кол-во деактивированных юзеров, кол-во переназначенных PR
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  team_name:
+                    type: string
+                  deactivated_users:
+                    type: string
+                  reassigned_reviews:
+                    type: string
+              example:
+                team_name: Team-1
+                deactivated_users: 2
+                reassigned_reviews: 3
+        '400':
+          description: В команде нет таких юзеров
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '404':
           description: Команда не найдена
           content:
@@ -422,3 +472,44 @@ paths:
                     pull_request_name: Add search
                     author_id: u1
                     status: OPEN
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /users/getStats:
+    get:
+      tags: [ Users ]
+      summary: Получить на скольких PR юзер назначен как ревьювер
+      parameters:
+        - $ref: '#/components/parameters/UserIdQuery'
+      responses:
+        '200':
+          description: Количество PR'ов
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                  username:
+                    type: string
+                  total_prs:
+                    type: string
+                  open_prs:
+                    type: string
+                  merged_prs:
+                    type: string
+              example:
+                user_id: u2
+                username: user2
+                total_prs: 3
+                open_prs: 1
+                merged_prs: 2
+        '404':
+          description: Пользователь не найден
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
