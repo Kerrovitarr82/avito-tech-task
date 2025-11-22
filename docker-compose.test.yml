@@ -1,0 +1,21 @@
+services:
+  db_test:
+    restart: always
+    image: postgres:latest
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 1s
+      timeout: 1s
+      retries: 25
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=test_pass
+      - POSTGRES_DB=test_db
+
+  tests:
+    build: ./
+    image: pr-reviewer:dev
+    depends_on:
+      db_test:
+        condition: service_healthy
+    command: go test ./tests/integration/... -v
